@@ -1,52 +1,39 @@
+import numpy as np
 import matplotlib.pyplot as plt
 
-def draw_pixel(canvas, x, y, color):
-    canvas[y][x] = color
+def scanline_fill(points):
+    
+    # Find the min and max y-coordinates
+    ymin = int(min(points[:,1]))
+    ymax = int(max(points[:,1]))
 
-def get_pixel(canvas, x, y):
-    return canvas[y][x]
+    # Initialize an array to store the x-coordinates of the intersections
+    # between the scanline and the polygon edges
+    x_intersections = np.zeros((len(points),))
 
-def scanline_fill(canvas, seed_point, fill_color):
-    stack = [seed_point]
+    # Iterate over each scanline
+    for y in range(ymin, ymax+1):
+        # Find the edges that intersect the scanline
+        j = 0
+        for i in range(len(points)):
+            if i == len(points) - 1:
+                k = 0
+            else:
+                k = i + 1
 
-    while stack:
-        x, y = stack.pop()
+            if (points[i][1] <= y and points[k][1] > y) or (points[k][1] <= y and points[i][1] > y):
+                x_intersections[j] = int(points[i][0] + (y - points[i][1]) / (points[k][1] - points[i][1]) * (points[k][0] - points[i][0]))
+                j += 1
 
-        # Move to the left boundary
-        while x >= 0 and get_pixel(canvas, x, y) != fill_color:
-            x -= 1
-        x += 1
+        # Sort the intersections by x-coordinate
+        x_intersections = np.sort(x_intersections[:j])
 
-        # Fill the scanline to the right
-        while x < len(canvas[0]) and get_pixel(canvas, x, y) != fill_color:
-            draw_pixel(canvas, x, y, fill_color)
+        # Fill the scanline between pairs of intersections
+        for i in range(0, len(x_intersections), 2):
+            plt.plot([x_intersections[i], x_intersections[i+1]], [y, y], color='black')
 
-            # Check and push neighboring pixels
-            if y > 0 and get_pixel(canvas, x, y - 1) != fill_color:
-                stack.append((x, y - 1))
-            if y < len(canvas) - 1 and get_pixel(canvas, x, y + 1) != fill_color:
-                stack.append((x, y + 1))
-
-            x += 1
-
-def main():
-    width, height = 20, 20
-    canvas = [[(255, 255, 255) for _ in range(width)] for _ in range(height)]
-
-    seed_point = (10, 10)
-    fill_color = (255, 0, 0)
-
-    # Drawing a simple shape
-    for y in range(5, 15):
-        for x in range(5, 15):
-            draw_pixel(canvas, x, y, (0, 0, 0))
-
-    scanline_fill(canvas, seed_point, fill_color)
-
-    # Visualize the canvas using Matplotlib
-    plt.imshow(canvas)
-    plt.title("Scanline Fill Algorithm")
     plt.show()
 
-if __name__ == "__main__":
-    main()
+#example usage
+points = np.array([(100, 100), (200, 200), (300, 150), (200, 100)])
+scanline_fill(points)
